@@ -30,10 +30,14 @@ if __name__== '__main__':
                         help="Dimension of emotion vector")
     parser.add_argument("--dropout", dest="dropout", default=0.1,
                         help="Dropout applied to the model")
-    parser.add_argument("--nhead", dest="nhead", default=8,
-                        help="Number of head in the transformer")
-    parser.add_argument("--nlayer", dest="nlayer", default=4,
-                        help="Number of layers in the transformer")
+    parser.add_argument("--nhead_enc", dest="nhead_enc", default=8,
+                        help="Number of head in the transformer encoder")
+    parser.add_argument("--nhead_dec", dest="nhead_dec", default=8,
+                        help="Number of head in the transformer decoder")
+    parser.add_argument("--nlayer_dec", dest="nlayer_dec", default=4,
+                        help="Number of layers in the transformer decoder")
+    parser.add_argument("--nlayer_enc", dest="nlayer_enc", default=4,
+                        help="Number of layers in the transformer encoder")
     
 
 
