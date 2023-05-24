@@ -21,10 +21,20 @@ class PositionalEncoding(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Arguments:
-            x: Tensor, shape ``[seq_len, batch_size, embedding_dim]``
+            x: Tensor, shape ``[batch_size, seq_len, embedding_dim]``
         """
-        x = x + self.pe[:x.size(0)]
+        x = x + self.pe[:,:x.size(1),:]
         return self.dropout(x)
+
+
+def init_tgt_mask(t):
+    return torch.triu(torch.ones(t, t) * float('-inf'), diagonal = 1)
+
+def init_mem_mask(t,s):
+    mask = torch.ones(t,s)
+    for i in range(t):
+        mask[i, :i+1] = 0
+    return mask
     
 
 class ExpModel(nn.Module):
@@ -34,7 +44,7 @@ class ExpModel(nn.Module):
         #vertices embedding
         self.embed_vertices = nn.Linear(args.vertices_dim, args.feat_dim)
         #emotion embedding
-        self.embed_emotion = nn.Linear(args.emotion_dim, args.feat_dim)
+        self.embed_emotion = nn.Embedding(args.emotion_dim, args.feat_dim)
         #positional encoding
         self.pos_enc = PositionalEncoding(args.feat_dim, args.dropout)
         #layernorm for the transformer decoder
@@ -53,13 +63,13 @@ class ExpModel(nn.Module):
 
     def forward(self, emotion, vertices, length):
         
-        
+        #embed emotion
+        embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
 
         #add positional encoding to the emotion embedding
-        embedded_emotion = self.pos_enc(embedded_emotion)
+        embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
 
-        #embed emotion
-        embedded_emotion = self.embed_emotion(emotion)
+        
 
         emotion_features = self.encoder(embedded_emotion)
 
@@ -74,11 +84,14 @@ class ExpModel(nn.Module):
             
             input_vertices = self.pos_enc(emb_vertices)
 
-            #TODO: maybe add a mask for the position in which i find myself in the loop?
-            #TODO: implement both tgt_mask and memory_mask
+            #TODO: check if the masks are done correctly
+
+            tgt_mask = init_tgt_mask(input_vertices.shape[1])
+
+            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
 
             #decoder
-            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = None, memory_mask = None)
+            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
             
             out = self.lin_vertices(feature_out)
 
