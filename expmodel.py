@@ -33,7 +33,7 @@ def init_tgt_mask(t):
 def init_mem_mask(t,s):
     mask = torch.ones(t,s)
     for i in range(t):
-        mask[i, :i+1] = 0
+        mask[i, i+1:] *= float('-inf')
     return mask
     
 
@@ -73,7 +73,9 @@ class ExpModel(nn.Module):
 
         emotion_features = self.encoder(embedded_emotion)
 
-        
+        #TODO: this is done simulating the Faceformer autoregressive training, maybe 
+        #it is not required to do so
+        '''
         for i in range(length):
             if i == 0:
                 #embed the starting vertices
@@ -98,10 +100,19 @@ class ExpModel(nn.Module):
             out_vertices = torch.cat((out_vertices, out), 1)
 
             emb_vertices = torch.cat((emb_vertices, feature_out), 1)
+            
 
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
+            '''
+        #TODO: consider this alternative as training cycle
+        emb_vertices = self.embed_vertices(vertices)
+        input_vertices = self.pos_enc(emb_vertices)
+        tgt_mask = init_tgt_mask(input_vertices.shape[1])
+        mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
+        feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
+        out = self.lin_vertices(feature_out)
 
-        return out_vertices
+        return out
 
 
     #TODO: implement the predict method
