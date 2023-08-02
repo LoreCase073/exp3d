@@ -3,11 +3,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+#TODO: modify the biased mask to work
+def init_biased_mask(n_head, max_len):
+    def get_slopes(n):
+        def get_slopes_power_of_2(n):
+            start = (2**(-2**-(math.log2(n)-3)))
+            ratio = start
+            return [start*ratio**i for i in range(n)]
+        if math.log2(n).is_integer():
+            return get_slopes_power_of_2(n)                   
+        else:                                                 
+            closest_power_of_2 = 2**math.floor(math.log2(n)) 
+            return get_slopes_power_of_2(closest_power_of_2) + get_slopes(2*closest_power_of_2)[0::2][:n-closest_power_of_2]
+    slopes = torch.Tensor(get_slopes(n_head))
+    alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(max_len).unsqueeze(0).unsqueeze(0).expand(attn_heads, -1, -1)
+    alibi = alibi.view(attn_heads, 1, max_len)
+    #alibi = alibi.repeat(args.max_tokens//maxpos, 1, 1)
+    mask = (torch.triu(torch.ones(max_len, max_len)) == 1).transpose(0,1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    mask = mask.unsqueeze(0) + alibi
+    return mask
+
 
 #TODO: check if need to modify for the type of data we have
 class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 61):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -59,6 +80,9 @@ class ExpModel(nn.Module):
         #last linear layer to go back to vertices coordinates
         self.lin_vertices = nn.Linear(args.feat_dim, args.vertices_dim)
 
+        #bias
+        self.bias_mask = init_biased_mask(n_head = args.nhead_dec, max_len = 61)
+
 
 
     def forward(self, emotion, vertices, length):
@@ -107,7 +131,7 @@ class ExpModel(nn.Module):
         #TODO: consider this alternative as training cycle
         emb_vertices = self.embed_vertices(vertices)
         input_vertices = self.pos_enc(emb_vertices)
-        tgt_mask = init_tgt_mask(input_vertices.shape[1])
+        tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
