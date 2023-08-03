@@ -15,13 +15,25 @@ from expmodel import ExpModel
 
 
 if __name__== '__main__':
-    parser = argparse.ArgumentParser(description='Train MSAT - Contacts')
+    parser = argparse.ArgumentParser(description='Train Exp3D')
 
     parser.add_argument("--epochs", dest="epochs", default=5, help="number of epochs")
     parser.add_argument("--batch_size", dest="batch_size", default=64, help="Batch size")
     parser.add_argument("--lr", dest="lr", default=1e-4, help="learning rate train")
     parser.add_argument("--scheduling", dest="scheduling", default=0,
                         help="1 if scheduling lr policy applied, 0 otherwise")
+    parser.add_argument("--filepath", dest="filepath", 
+                        help="Path to the dataset")
+    parser.add_argument("--training_csv", dest="training_csv", 
+                        help="Path to the csv training set")
+    parser.add_argument("--validation_csv", dest="validation_csv", 
+                        help="Path to the csv validation set")
+    parser.add_argument("--project_name", dest="project_name",
+                        help="Project name")
+    parser.add_argument("--name_experiment", dest="name_experiment",
+                        help="Experiment name")
+    parser.add_argument("--weights_path", dest="weights_path",
+                        help="Weights path")
     
     #model parameters
     parser.add_argument("--vertices_dim", dest="vertices_dim", default=5023,
@@ -40,12 +52,6 @@ if __name__== '__main__':
                         help="Number of layers in the transformer decoder")
     parser.add_argument("--nlayer_enc", dest="nlayer_enc", default=4,
                         help="Number of layers in the transformer encoder")
-    parser.add_argument("--filepath", dest="filepath", 
-                        help="Path to the dataset")
-    parser.add_argument("--training_csv", dest="training_csv", 
-                        help="Path to the csv training set")
-    parser.add_argument("--validation_csv", dest="validation_csv", 
-                        help="Path to the csv validation set")
     parser.add_argument("--seq_dim", dest="seq_dim", default=61,
                         help="Dimension of sequences in the dataset")
     
@@ -111,7 +117,7 @@ if __name__== '__main__':
     num_workers=2)
 
     #TODO: define the optimizer
-    optimizer = ...
+    optimizer = torch.optim.Adam(model.parameters(), args.lr)
 
     #TODO: define the model
     model = model.to(device)
@@ -125,7 +131,7 @@ if __name__== '__main__':
     print("Starting the training")
     
     #TODO: define the loss
-    lossFunc = ...
+    lossFunc = nn.MSELoss()
 
     for epoch in range(epochs):
         model.train()
