@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import os
 import trimesh
 import rarfile
+import pandas as pd
 
 '''
 class Exp3dDataset(Dataset):
@@ -61,11 +62,11 @@ path = '/mnt/diskone-first/lcaselli/dataset'
 
 class Exp3dDataset(Dataset):
 
-    def __init__(self, filepath, csv_file):
+    def __init__(self, filepath, csv_file, length):
         self.filepath = filepath
         #TODO: magari aggiungere che si può modificare lunghezza delle sequenze
-        #self.length = length
-        self.csv_file = csv_file
+        self.length = length
+        self.csv_file = pd.read_csv(csv_file)
         self.extract_vertices = Extract_Vertices()
         self.emotion_encoding = Emotion_Encoding()
         
@@ -94,9 +95,8 @@ class Exp3dDataset(Dataset):
 
         return vertices, emotion
 
-    
     def __len__(self):
-        return self.len
+        return self.length
 
 
 class Extract_Vertices(object):
@@ -105,31 +105,34 @@ class Extract_Vertices(object):
 
     def __call__(self, folder, emotion_name):
 
-        with rarfile.Rarfile(folder) as rf:
+        with rarfile.RarFile(folder) as rf:
             vertices = []
             for i in range(61):
-                num = str(0 + i) if i < 10 else str(i)
-                with rf.open(emotion_name + '_' + num +'.obj') as f:
-                    #this is for 1 frame, i have to replicate for n = 61 frames
-                    myobj = trimesh.load_mesh(f)
-                    v = myobj.vertices
-                    vertices.append(v)
+                num = str(str(0) + str(i)) if i < 10 else str(i)
+                rf.extract(emotion_name + '/' + emotion_name + '_' + num +'.obj','tmp/')
+                #with rf.open(emotion_name + '/' + emotion_name + '_' + num +'.obj', mode='r') as f:
+                #this is for 1 frame, i have to replicate for n = 61 frames
+                myobj = trimesh.load_mesh('tmp/' + emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
+                v = myobj.vertices
+                vertices.append([v])
+                os.remove('tmp/' + emotion_name + '/' + emotion_name + '_' + num +'.obj')
             
-            vertices = torch.FloatTensor(vertices)
+            vertices = torch.FloatTensor(np.array(vertices))
+            vertices = vertices.squeeze()
         
         return vertices
 
 class Emotion_Encoding(object):
     def __init__(self):
         self.emotions = {
-            'Disgust': [1,0,0,0,0,0,0,0],
-            'Desire': [0,1,0,0,0,0,0,0],
-            'Sad1': [0,0,1,0,0,0,0,0],
-            'Angry1': [0,0,0,1,0,0,0,0],
-            'Fear': [0,0,0,0,1,0,0,0],
-            'Surprised': [0,0,0,0,0,1,0,0],
-            'Concentrate': [0,0,0,0,0,0,1,0],
-            'Happy': [0,0,0,0,0,0,0,1],
+            'Disgust': 1,
+            'Desire': 2,
+            'Sad1': 3,
+            'Angry1': 4,
+            'Fear': 5,
+            'Surprised': 6,
+            'Concentrate': 7,
+            'Happy': 8,
         }
 
     def __call__(self, emotion_name):
@@ -139,6 +142,6 @@ class Emotion_Encoding(object):
         for i in range(61):
             emotion.append(self.emotions[emotion_name])
 
-        emotion = torch.FloatTensor(emotion)
+        emotion = torch.IntTensor(emotion)
         
         return emotion

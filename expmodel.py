@@ -37,6 +37,7 @@ class PositionalEncoding(nn.Module):
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)
         pe[:, 0, 1::2] = torch.cos(position * div_term)
+        pe = pe.permute(1,0,2)
         self.register_buffer('pe', pe)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -63,37 +64,34 @@ class ExpModel(nn.Module):
         super().__init__()
 
         #vertices embedding
-        self.embed_vertices = nn.Linear(args.vertices_dim, args.feat_dim)
+        self.embed_vertices = nn.Linear(int(args.vertices_dim), int(args.feat_dim))
         #emotion embedding
-        self.embed_emotion = nn.Embedding(args.emotion_dim, args.feat_dim)
+        self.embed_emotion = nn.Embedding(int(args.emotion_dim), int(args.feat_dim))
         #positional encoding
-        self.pos_enc = PositionalEncoding(args.feat_dim, args.dropout)
+        self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
         #layernorm for the transformer decoder
-        layer_norm = nn.LayerNorm(self.feat_dim)
+        layer_norm = nn.LayerNorm(int(args.feat_dim))
         #transformer decoder
-        dec_layer = nn.TransformerDecoderLayer(d_model = args.feat_dim, nhead = args.nhead_dec, dim_feedforward = 2*args.feat_dim, batch_first = True)
-        self.decoder = nn.TransformerDecoder(dec_layer, num_layers = args.nlayer_dec, norm = layer_norm)
+        dec_layer = nn.TransformerDecoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_dec), dim_feedforward = 2*int(args.feat_dim), batch_first = True)
+        self.decoder = nn.TransformerDecoder(dec_layer, num_layers = int(args.nlayer_dec), norm = layer_norm)
         #define encoder for the emotions
-        enc_layer = nn.TransformerEncoderLayer(d_model = args.feat_dim, nhead = args.nhead_enc, dim_feedforward = 2*args.feat_dim, batch_first = True)
-        self.encoder= nn.TransformerEncoder(encoder_layer = enc_layer, num_layers = args.nlayer_enc, norm = layer_norm)
+        enc_layer = nn.TransformerEncoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_enc), dim_feedforward = 2*int(args.feat_dim), batch_first = True)
+        self.encoder= nn.TransformerEncoder(encoder_layer = enc_layer, num_layers = int(args.nlayer_enc), norm = layer_norm)
 
         #last linear layer to go back to vertices coordinates
-        self.lin_vertices = nn.Linear(args.feat_dim, args.vertices_dim)
+        self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim))
 
         #bias
-        self.bias_mask = init_biased_mask(n_head = args.nhead_dec, max_len = 60)
+        self.bias_mask = init_biased_mask(n_head = int(args.nhead_dec), max_len = 60)
 
 
 
     def forward(self, emotion, vertices):
-        
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
 
         #add positional encoding to the emotion embedding
         embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
-
-        
 
         emotion_features = self.encoder(embedded_emotion)
 
@@ -129,14 +127,17 @@ class ExpModel(nn.Module):
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
             '''
         #TODO: consider this alternative as training cycle
-        emb_vertices = self.embed_vertices(vertices[:,:-1]) #shift of one position
+        print(vertices.shape)
+        vertices = vertices.permute(0,1,3,2) #(batch, length, vert_size, coord) - (batch, length, coord, vert_size)
+        emb_vertices = self.embed_vertices(vertices)
+        vertices = vertices.permute(0,1,2,3)
         input_vertices = self.pos_enc(emb_vertices)
         tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
 
-        return out #this gets out a -1 (60) tensor, to compare with the lasts 60 positions in the starting tensor
+        return out 
 
 
     #TODO: implement the predict method

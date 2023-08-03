@@ -1,4 +1,4 @@
-import comet_ml as Experiment
+from comet_ml import Experiment
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -19,7 +19,7 @@ if __name__== '__main__':
 
     parser.add_argument("--epochs", dest="epochs", default=5, help="number of epochs")
     parser.add_argument("--batch_size", dest="batch_size", default=64, help="Batch size")
-    parser.add_argument("--lr", dest="lr", default=1e-4, help="learning rate train")
+    parser.add_argument("--lr", dest="lr", default=1e-4, help="learning rate train", type=float)
     parser.add_argument("--scheduling", dest="scheduling", default=0,
                         help="1 if scheduling lr policy applied, 0 otherwise")
     parser.add_argument("--filepath", dest="filepath", 
@@ -76,7 +76,7 @@ if __name__== '__main__':
         "scheduling": scheduling,
     }
 
-    experiment = Experiment(project_name=args.project_name)
+    experiment = Experiment(project_name=args.project_name, disabled=True)
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args)
@@ -98,12 +98,14 @@ if __name__== '__main__':
     
     #Dataset loading
     msa_dataset = Exp3dDataset(filepath=args.filepath,
-    csv_file=args.training_csv
+    csv_file=args.training_csv,
+    length=int(args.seq_dim)
     )
 
 
     valid_set = Exp3dDataset(filepath=args.filepath,
-    csv_file=args.validation_csv
+    csv_file=args.validation_csv,
+    length=int(args.seq_dim)
     )
 
     training_loader = DataLoader(dataset=msa_dataset, 
@@ -142,10 +144,12 @@ if __name__== '__main__':
 
             for vertices, emotion in tepoch:
                 tepoch.set_description(f"Epoch{epoch}")
+                vertices = vertices.to(device)
+                emotion = emotion.to(device)
 
                 optimizer.zero_grad()
 
-                output = model(emotion, vertices)
+                output = model(emotion, vertices).to(device)
                 
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della retecon i vertici stessi
