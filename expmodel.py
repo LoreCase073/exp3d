@@ -69,7 +69,7 @@ class ExpModel(nn.Module):
         #positional encoding
         self.pos_enc = PositionalEncoding(args.feat_dim, args.dropout)
         #layernorm for the transformer decoder
-        layer_norm = nn.LayerNorm(normalized_shape = [args.seq_dim, args.feat_dim] )
+        layer_norm = nn.LayerNorm(self.feat_dim)
         #transformer decoder
         dec_layer = nn.TransformerDecoderLayer(d_model = args.feat_dim, nhead = args.nhead_dec, dim_feedforward = 2*args.feat_dim, batch_first = True)
         self.decoder = nn.TransformerDecoder(dec_layer, num_layers = args.nlayer_dec, norm = layer_norm)
@@ -81,11 +81,11 @@ class ExpModel(nn.Module):
         self.lin_vertices = nn.Linear(args.feat_dim, args.vertices_dim)
 
         #bias
-        self.bias_mask = init_biased_mask(n_head = args.nhead_dec, max_len = 61)
+        self.bias_mask = init_biased_mask(n_head = args.nhead_dec, max_len = 60)
 
 
 
-    def forward(self, emotion, vertices, length):
+    def forward(self, emotion, vertices):
         
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
@@ -129,7 +129,7 @@ class ExpModel(nn.Module):
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
             '''
         #TODO: consider this alternative as training cycle
-        emb_vertices = self.embed_vertices(vertices)
+        emb_vertices = self.embed_vertices(vertices[:,:-1]) #shift of one position
         input_vertices = self.pos_enc(emb_vertices)
         tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
@@ -140,5 +140,21 @@ class ExpModel(nn.Module):
 
 
     #TODO: implement the predict method
-    def predict(self, emotion, vertices, length):
-        pass
+    def predict(self, emotion, vertices):
+
+        #embed emotion
+        embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
+
+        #add positional encoding to the emotion embedding
+        embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
+
+        emotion_features = self.encoder(embedded_emotion)
+
+        emb_vertices = self.embed_vertices(vertices)
+        input_vertices = self.pos_enc(emb_vertices)
+        tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
+        mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
+        feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
+        out = self.lin_vertices(feature_out)
+
+        return out[:,-1] #take only the last frame generated

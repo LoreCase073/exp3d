@@ -142,7 +142,8 @@ if __name__== '__main__':
                 output = model()
                 
                 #TODO: complete the training loop
-                loss = lossFunc(contacts, labels)
+                #TODO: qui deve confrontare gli output della retecon i vertici stessi
+                loss = lossFunc(output, vertices)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
