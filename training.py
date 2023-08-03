@@ -134,7 +134,7 @@ if __name__== '__main__':
         train_precision = 0.0
         with tqdm(training_loader, unit="batch") as tepoch:
 
-            for msa, distances,_ in tepoch:
+            for vertices, emotion in tepoch:
                 tepoch.set_description(f"Epoch{epoch}")
 
                 optimizer.zero_grad()
@@ -162,8 +162,8 @@ if __name__== '__main__':
             
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:
-                    for msa, distances,_ in vepoch:
-
+                    for vertices, emotion in vepoch:
+                        #TODO:fare evaluation in maniera autoregressiva
                         vepoch.set_description(f"Epoch{epoch}")
 
                         output = model()
