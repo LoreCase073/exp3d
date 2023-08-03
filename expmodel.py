@@ -140,7 +140,7 @@ class ExpModel(nn.Module):
 
 
     #TODO: implement the predict method
-    def predict(self, emotion, vertices):
+    def predict(self, emotion, vertices, frames):
 
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
@@ -149,12 +149,21 @@ class ExpModel(nn.Module):
         embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
 
         emotion_features = self.encoder(embedded_emotion)
+        for i in range(frames):
+            if i == 0:
+                emb_vertices = self.embed_vertices(vertices) #(batch, 1, emb_size)
+                input_vertices = self.pos_enc(emb_vertices)
+            else:
+                input_vertices = self.pos_enc(emb_vertices)
+            tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
+            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
+            #out features
+            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
+            #vertices in vertices dimensions
+            out_vertices = self.lin_vertices(feature_out)
+            #take last vertices and embed them to feature dimensions
+            last_vertices = self.embed_vertices(out_vertices[:,-1,:])
+            #concat embeddings with last embeddings
+            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
 
-        emb_vertices = self.embed_vertices(vertices)
-        input_vertices = self.pos_enc(emb_vertices)
-        tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-        mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
-        feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
-        out = self.lin_vertices(feature_out)
-
-        return out[:,-1] #take only the last frame generated
+        return out_vertices 

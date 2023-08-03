@@ -139,11 +139,11 @@ if __name__== '__main__':
 
                 optimizer.zero_grad()
 
-                output = model()
+                output = model(emotion, vertices)
                 
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della retecon i vertici stessi
-                loss = lossFunc(output, vertices)
+                loss = lossFunc(output, vertices[1:])
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
@@ -168,9 +168,9 @@ if __name__== '__main__':
                         #TODO:fare evaluation in maniera autoregressiva
                         vepoch.set_description(f"Epoch{epoch}")
 
-                        output = model()
+                        output = model.predict(emotion,vertices,60)
                         
-                        loss = lossFunc()
+                        loss = lossFunc(output, vertices[1:])
                         
                         val_loss += loss.item()
 
