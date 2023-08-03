@@ -160,6 +160,7 @@ if __name__== '__main__':
         if epoch % 5 == 0:
             print(f'Start Validation:')
             model.eval() 
+            val_loss = 0.0
             
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:

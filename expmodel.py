@@ -136,7 +136,7 @@ class ExpModel(nn.Module):
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
 
-        return out
+        return out #this gets out a -1 (60) tensor, to compare with the lasts 60 positions in the starting tensor
 
 
     #TODO: implement the predict method
