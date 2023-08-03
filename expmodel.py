@@ -16,8 +16,8 @@ def init_biased_mask(n_head, max_len):
             closest_power_of_2 = 2**math.floor(math.log2(n)) 
             return get_slopes_power_of_2(closest_power_of_2) + get_slopes(2*closest_power_of_2)[0::2][:n-closest_power_of_2]
     slopes = torch.Tensor(get_slopes(n_head))
-    alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(max_len).unsqueeze(0).unsqueeze(0).expand(attn_heads, -1, -1)
-    alibi = alibi.view(attn_heads, 1, max_len)
+    alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(max_len).unsqueeze(0).unsqueeze(0).expand(n_head, -1, -1)
+    alibi = alibi.view(n_head, 1, max_len)
     #alibi = alibi.repeat(args.max_tokens//maxpos, 1, 1)
     mask = (torch.triu(torch.ones(max_len, max_len)) == 1).transpose(0,1)
     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
