@@ -1,6 +1,6 @@
 import comet_ml as Experiment
 import torch
-from torch.utils.data import Dataloader
+from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn.functional as F
 import os
@@ -10,6 +10,8 @@ import argparse
 import json
 import numpy as np
 import torch.nn as nn
+from data_loader import Exp3dDataset
+from expmodel import ExpModel
 
 
 if __name__== '__main__':
@@ -38,11 +40,16 @@ if __name__== '__main__':
                         help="Number of layers in the transformer decoder")
     parser.add_argument("--nlayer_enc", dest="nlayer_enc", default=4,
                         help="Number of layers in the transformer encoder")
+    parser.add_argument("--filepath", dest="filepath", 
+                        help="Path to the dataset")
+    parser.add_argument("--training_csv", dest="training_csv", 
+                        help="Path to the csv training set")
+    parser.add_argument("--validation_csv", dest="validation_csv", 
+                        help="Path to the csv validation set")
+    parser.add_argument("--seq_dim", dest="seq_dim", default=61,
+                        help="Dimension of sequences in the dataset")
     
-
-
-
-    parser = ....args(parser)
+    
 
     args = parser.parse_args()
 
@@ -50,10 +57,6 @@ if __name__== '__main__':
     batch_size = int(args.batch_size)
     lr = float(args.lr)
     scheduling = int(args.scheduling)
-    alphabet_size = int(args.alphabet_size)
-    padding_idx = int(args.padding_idx)
-    max_sequences = int(args.max_sequences)
-    max_positions = int(args.max_positions)
 
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -70,11 +73,11 @@ if __name__== '__main__':
     experiment = Experiment(project_name=args.project_name)
     experiment.set_name(args.name_experiment)
 
-    msat = ...(...)
+    model = ExpModel(args=args)
 
     
     experiment.log_parameters(hyper_parameters)
-    experiment.set_model_graph(msat)
+    experiment.set_model_graph(model)
 
     save_path = os.path.join(args.weights_path, args.name_experiment)
 
@@ -88,38 +91,32 @@ if __name__== '__main__':
         json.dump(hyper_parameters, outfile, indent=4)
     
     #Dataset loading
-    msa_dataset = ExpDataset(file_csv=args.csv_dataset,
-    npz=args.dataset_path,
-    max_seq_len=max_sequences, 
-    max_pos=max_positions,
-    padding_idx=padding_idx,
+    msa_dataset = Exp3dDataset(filepath=args.filepath,
+    csv_file=args.training_csv
     )
 
 
-    valid_set = ExpDataset(file_csv=args.csv_val,
-    npz=args.dataset_path,
-    max_seq_len=max_sequences, 
-    max_pos=max_positions,
-    padding_idx=padding_idx,
+    valid_set = Exp3dDataset(filepath=args.filepath,
+    csv_file=args.validation_csv
     )
 
     training_loader = DataLoader(dataset=msa_dataset, 
     batch_size=batch_size, 
     shuffle=True, 
-    num_workers=2, 
-    collate_fn=collate_tensors)
+    num_workers=2)
 
     val_loader = DataLoader(dataset=valid_set, 
     batch_size=1, 
     shuffle=True, 
-    num_workers=2, 
-    collate_fn=collate_tensors)
+    num_workers=2)
 
+    #TODO: define the optimizer
     optimizer = ...
 
+    #TODO: define the model
     model = model.to(device)
 
-    params = sum(p.numel() for p in msat.parameters() if p.requires_grad)
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     print(f"Number of parameters in the model: {params}")
 
@@ -127,10 +124,11 @@ if __name__== '__main__':
 
     print("Starting the training")
     
+    #TODO: define the loss
     lossFunc = ...
 
     for epoch in range(epochs):
-        msat.train()
+        model.train()
 
         running_loss = 0.0
         train_precision = 0.0
@@ -143,6 +141,7 @@ if __name__== '__main__':
 
                 output = model()
                 
+                #TODO: complete the training loop
                 loss = lossFunc(contacts, labels)
                 loss.backward()
                 optimizer.step()
@@ -154,7 +153,7 @@ if __name__== '__main__':
         print(f"Training loss: {running_loss/len(training_loader)} Epoch: {epoch}")
         experiment.log_metric('train_loss', running_loss/len(training_loader), step=epoch+1)
         if epoch % 1 ==0:
-            torch.save(msat.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
+            torch.save(model.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
 
         #START of the validation!
         if epoch % 5 == 0:

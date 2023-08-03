@@ -61,31 +61,33 @@ path = '/mnt/diskone-first/lcaselli/dataset'
 
 class Exp3dDataset(Dataset):
 
-    def __init__(self, filepath, csv_file, length):
+    def __init__(self, filepath, csv_file):
         self.filepath = filepath
-        self.length = length
+        #TODO: magari aggiungere che si può modificare lunghezza delle sequenze
+        #self.length = length
         self.csv_file = csv_file
         self.extract_vertices = Extract_Vertices()
         self.emotion_encoding = Emotion_Encoding()
-        #TODO: implement how to get the dataset
+        
 
-    
+    #TODO: raffinare per prendere non solo lunghezza 61 stabilita
     def __getitem__(self, index):
 
-        #TODO: estrarre rar
+        #folder to the file
         folder = os.path.join(self.filepath, self.csv_file.iloc[index, 0])
 
+        #emotion to be extracted from the folder
         em = os.path.join(folder, self.csv_file.iloc[index, 1])
 
+        #emotion name, removed the .rar
         emotion_name = self.csv_file.iloc[index,1].replace('.rar','')
 
 
-        #TODO:extract vertices per ogni frame da 0 to 60
+        #extract vertices per ogni frame da 0 to 60
         
         vertices = self.extract_vertices(em, emotion_name)
         
         
-        #TODO: implement how to load the emotion vector
         #for single expression, OHE of emotion
         emotion = self.emotion_encoding(emotion_name)
 

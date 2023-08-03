@@ -69,7 +69,7 @@ class ExpModel(nn.Module):
         #positional encoding
         self.pos_enc = PositionalEncoding(args.feat_dim, args.dropout)
         #layernorm for the transformer decoder
-        layer_norm = nn.LayerNorm(normalized_shape = ... )
+        layer_norm = nn.LayerNorm(normalized_shape = [args.seq_dim, args.feat_dim] )
         #transformer decoder
         dec_layer = nn.TransformerDecoderLayer(d_model = args.feat_dim, nhead = args.nhead_dec, dim_feedforward = 2*args.feat_dim, batch_first = True)
         self.decoder = nn.TransformerDecoder(dec_layer, num_layers = args.nlayer_dec, norm = layer_norm)
