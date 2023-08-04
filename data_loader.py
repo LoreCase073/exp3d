@@ -119,6 +119,10 @@ class Extract_Vertices(object):
             
             vertices = torch.FloatTensor(np.array(vertices))
             vertices = vertices.squeeze()
+            
+            vertices = vertices.view(61,vertices.shape[1]*vertices.shape[2])
+            
+            
         
         return vertices
 

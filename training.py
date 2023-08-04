@@ -147,7 +147,7 @@ if __name__== '__main__':
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
 
-                optimizer.zero_grad()
+                """ optimizer.zero_grad()
 
                 output = model(emotion, vertices).to(device)
                 
@@ -156,7 +156,7 @@ if __name__== '__main__':
                 loss = lossFunc(output, vertices[1:])
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item()
+                running_loss += loss.item() """
 
 
         

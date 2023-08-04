@@ -64,7 +64,7 @@ class ExpModel(nn.Module):
         super().__init__()
 
         #vertices embedding
-        self.embed_vertices = nn.Linear(int(args.vertices_dim), int(args.feat_dim))
+        self.embed_vertices = nn.Linear(int(args.vertices_dim)*3, int(args.feat_dim))
         #emotion embedding
         self.embed_emotion = nn.Embedding(int(args.emotion_dim), int(args.feat_dim))
         #positional encoding
@@ -79,7 +79,7 @@ class ExpModel(nn.Module):
         self.encoder= nn.TransformerEncoder(encoder_layer = enc_layer, num_layers = int(args.nlayer_enc), norm = layer_norm)
 
         #last linear layer to go back to vertices coordinates
-        self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim))
+        self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim)*3)
 
         #bias
         self.bias_mask = init_biased_mask(n_head = int(args.nhead_dec), max_len = 60)
@@ -127,10 +127,7 @@ class ExpModel(nn.Module):
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
             '''
         #TODO: consider this alternative as training cycle
-        print(vertices.shape)
-        vertices = vertices.permute(0,1,3,2) #(batch, length, vert_size, coord) - (batch, length, coord, vert_size)
         emb_vertices = self.embed_vertices(vertices)
-        vertices = vertices.permute(0,1,2,3)
         input_vertices = self.pos_enc(emb_vertices)
         tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
