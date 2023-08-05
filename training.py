@@ -64,6 +64,7 @@ if __name__== '__main__':
     lr = float(args.lr)
     scheduling = int(args.scheduling)
 
+    
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
@@ -76,10 +77,10 @@ if __name__== '__main__':
         "scheduling": scheduling,
     }
 
-    experiment = Experiment(project_name=args.project_name, disabled=True)
+    experiment = Experiment(project_name=args.project_name, disabled=False)
     experiment.set_name(args.name_experiment)
 
-    model = ExpModel(args=args)
+    model = ExpModel(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
@@ -116,7 +117,7 @@ if __name__== '__main__':
     val_loader = DataLoader(dataset=valid_set, 
     batch_size=1, 
     shuffle=True, 
-    num_workers=2)
+    num_workers=1)
 
     #TODO: define the optimizer
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
@@ -147,16 +148,16 @@ if __name__== '__main__':
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
 
-                """ optimizer.zero_grad()
+                optimizer.zero_grad()
 
                 output = model(emotion, vertices).to(device)
                 
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della retecon i vertici stessi
-                loss = lossFunc(output, vertices[1:])
+                loss = lossFunc(output, vertices)
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item() """
+                running_loss += loss.item()
 
 
         
@@ -177,10 +178,12 @@ if __name__== '__main__':
                     for vertices, emotion in vepoch:
                         #TODO:fare evaluation in maniera autoregressiva
                         vepoch.set_description(f"Epoch{epoch}")
+                        vertices = vertices.to(device)
+                        emotion = emotion.to(device)
 
-                        output = model.predict(emotion,vertices,60)
+                        output = model.predict(emotion,vertices[:,0,:],61).to(device)
                         
-                        loss = lossFunc(output, vertices[1:])
+                        loss = lossFunc(output, vertices)
                         
                         val_loss += loss.item()
 

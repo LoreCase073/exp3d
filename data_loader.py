@@ -76,6 +76,7 @@ class Exp3dDataset(Dataset):
 
         #folder to the file
         folder = os.path.join(self.filepath, self.csv_file.iloc[index, 0])
+        
 
         #emotion to be extracted from the folder
         em = os.path.join(folder, self.csv_file.iloc[index, 1])
@@ -105,22 +106,19 @@ class Extract_Vertices(object):
 
     def __call__(self, folder, emotion_name):
 
-        with rarfile.RarFile(folder) as rf:
-            vertices = []
-            for i in range(61):
-                num = str(str(0) + str(i)) if i < 10 else str(i)
-                rf.extract(emotion_name + '/' + emotion_name + '_' + num +'.obj','tmp/')
-                #with rf.open(emotion_name + '/' + emotion_name + '_' + num +'.obj', mode='r') as f:
-                #this is for 1 frame, i have to replicate for n = 61 frames
-                myobj = trimesh.load_mesh('tmp/' + emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
-                v = myobj.vertices
-                vertices.append([v])
-                os.remove('tmp/' + emotion_name + '/' + emotion_name + '_' + num +'.obj')
-            
-            vertices = torch.FloatTensor(np.array(vertices))
-            vertices = vertices.squeeze()
-            
-            vertices = vertices.view(61,vertices.shape[1]*vertices.shape[2])
+        
+        vertices = []
+        emotion_dir = folder.replace('.rar','')
+        for i in range(61):
+            num = str(str(0) + str(i)) if i < 10 else str(i)
+            myobj = trimesh.load_mesh(emotion_dir+ '/'+ emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
+            v = myobj.vertices
+            vertices.append([v])
+        
+        vertices = torch.FloatTensor(np.array(vertices))
+        vertices = vertices.squeeze()
+        
+        vertices = vertices.view(61,vertices.shape[1]*vertices.shape[2])
             
             
         
@@ -129,14 +127,14 @@ class Extract_Vertices(object):
 class Emotion_Encoding(object):
     def __init__(self):
         self.emotions = {
-            'Disgust': 1,
-            'Desire': 2,
-            'Sad1': 3,
-            'Angry1': 4,
-            'Fear': 5,
-            'Surprised': 6,
-            'Concentrate': 7,
-            'Happy': 8,
+            'Disgust': 0,
+            'Desire': 1,
+            'Sad1': 2,
+            'Angry1': 3,
+            'Fear': 4,
+            'Surprised': 5,
+            'Concentrate': 6,
+            'Happy': 7,
         }
 
     def __call__(self, emotion_name):

@@ -4,25 +4,33 @@ import torch.nn.functional as F
 import math
 
 #TODO: modify the biased mask to work
-def init_biased_mask(n_head, max_len):
-    def get_slopes(n):
-        def get_slopes_power_of_2(n):
-            start = (2**(-2**-(math.log2(n)-3)))
-            ratio = start
-            return [start*ratio**i for i in range(n)]
-        if math.log2(n).is_integer():
-            return get_slopes_power_of_2(n)                   
-        else:                                                 
-            closest_power_of_2 = 2**math.floor(math.log2(n)) 
-            return get_slopes_power_of_2(closest_power_of_2) + get_slopes(2*closest_power_of_2)[0::2][:n-closest_power_of_2]
-    slopes = torch.Tensor(get_slopes(n_head))
-    alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(max_len).unsqueeze(0).unsqueeze(0).expand(n_head, -1, -1)
-    alibi = alibi.view(n_head, 1, max_len)
-    #alibi = alibi.repeat(args.max_tokens//maxpos, 1, 1)
-    mask = (torch.triu(torch.ones(max_len, max_len)) == 1).transpose(0,1)
-    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    mask = mask.unsqueeze(0) + alibi
-    return mask
+
+class BiasedMask(nn.Module):
+    def __init__(self, n_head, max_len: int = 61):
+        super().__init__()
+        self.n_head = n_head
+        self.max_len = max_len
+        
+
+    def forward(self, x):
+        def get_slopes(n):
+            def get_slopes_power_of_2(n):
+                start = (2**(-2**-(math.log2(n)-3)))
+                ratio = start
+                return [start*ratio**i for i in range(n)]
+            if math.log2(n).is_integer():
+                return get_slopes_power_of_2(n)                   
+            else:                                                 
+                closest_power_of_2 = 2**math.floor(math.log2(n)) 
+                return get_slopes_power_of_2(closest_power_of_2) + get_slopes(2*closest_power_of_2)[0::2][:n-closest_power_of_2]
+        slopes = torch.Tensor(get_slopes(self.n_head))
+        alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(self.max_len).unsqueeze(0).unsqueeze(0).expand(self.n_head, -1, -1)
+        alibi = alibi.view(self.n_head, 1, self.max_len)
+        alibi = alibi.repeat(x.shape[0], 1, 1)
+        mask = (torch.triu(torch.ones(self.max_len, self.max_len)) == 1).transpose(0,1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        mask = mask.unsqueeze(0) + alibi
+        return mask
 
 
 #TODO: check if need to modify for the type of data we have
@@ -60,8 +68,10 @@ def init_mem_mask(t,s):
     
 
 class ExpModel(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, device):
         super().__init__()
+
+        self.device = device
 
         #vertices embedding
         self.embed_vertices = nn.Linear(int(args.vertices_dim)*3, int(args.feat_dim))
@@ -82,7 +92,7 @@ class ExpModel(nn.Module):
         self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim)*3)
 
         #bias
-        self.bias_mask = init_biased_mask(n_head = int(args.nhead_dec), max_len = 60)
+        self.bias_mask = BiasedMask(n_head = int(args.nhead_dec), max_len = 61)
 
 
 
@@ -129,8 +139,8 @@ class ExpModel(nn.Module):
         #TODO: consider this alternative as training cycle
         emb_vertices = self.embed_vertices(vertices)
         input_vertices = self.pos_enc(emb_vertices)
-        tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-        mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
+        tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
+        mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
 
@@ -149,18 +159,18 @@ class ExpModel(nn.Module):
         emotion_features = self.encoder(embedded_emotion)
         for i in range(frames):
             if i == 0:
-                emb_vertices = self.embed_vertices(vertices) #(batch, 1, emb_size)
+                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
-            tgt_mask = self.bias_mask[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
+            tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
+            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
             #out features
             feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
             #vertices in vertices dimensions
             out_vertices = self.lin_vertices(feature_out)
             #take last vertices and embed them to feature dimensions
-            last_vertices = self.embed_vertices(out_vertices[:,-1,:])
+            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
             #concat embeddings with last embeddings
             emb_vertices = torch.cat((emb_vertices,last_vertices),1)
 
