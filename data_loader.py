@@ -81,9 +81,12 @@ class Exp3dDataset(Dataset):
         #emotion to be extracted from the folder
         em = os.path.join(folder, self.csv_file.iloc[index, 1])
 
+        em = em.replace('.rar','')
+
         #emotion name, removed the .rar
         emotion_name = self.csv_file.iloc[index,1].replace('.rar','')
 
+        name = self.csv_file.iloc[index,0]+ '_' + emotion_name
 
         #extract vertices per ogni frame da 0 to 60
         
@@ -93,8 +96,10 @@ class Exp3dDataset(Dataset):
         #for single expression, OHE of emotion
         emotion = self.emotion_encoding(emotion_name)
 
+        em = em + '/' + emotion_name + '/' + emotion_name + '_' 
 
-        return vertices, emotion
+
+        return vertices, emotion, name, em
 
     def __len__(self):
         return self.length
@@ -108,10 +113,9 @@ class Extract_Vertices(object):
 
         
         vertices = []
-        emotion_dir = folder.replace('.rar','')
         for i in range(61):
             num = str(str(0) + str(i)) if i < 10 else str(i)
-            myobj = trimesh.load_mesh(emotion_dir+ '/'+ emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
+            myobj = trimesh.load_mesh(folder + '/' + emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
             v = myobj.vertices
             vertices.append([v])
         

@@ -12,6 +12,8 @@ import numpy as np
 import torch.nn as nn
 from data_loader import Exp3dDataset
 from expmodel import ExpModel
+import matplotlib.pyplot as plt
+import trimesh
 
 
 if __name__== '__main__':
@@ -98,7 +100,7 @@ if __name__== '__main__':
         json.dump(hyper_parameters, outfile, indent=4)
     
     #Dataset loading
-    msa_dataset = Exp3dDataset(filepath=args.filepath,
+    training_set = Exp3dDataset(filepath=args.filepath,
     csv_file=args.training_csv,
     length=int(args.seq_dim)
     )
@@ -109,7 +111,7 @@ if __name__== '__main__':
     length=int(args.seq_dim)
     )
 
-    training_loader = DataLoader(dataset=msa_dataset, 
+    training_loader = DataLoader(dataset=training_set, 
     batch_size=batch_size, 
     shuffle=True, 
     num_workers=2)
@@ -143,7 +145,7 @@ if __name__== '__main__':
         train_precision = 0.0
         with tqdm(training_loader, unit="batch") as tepoch:
 
-            for vertices, emotion in tepoch:
+            for vertices, emotion, _, _ in tepoch:
                 tepoch.set_description(f"Epoch{epoch}")
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
@@ -154,7 +156,7 @@ if __name__== '__main__':
                 
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della retecon i vertici stessi
-                loss = lossFunc(output, vertices)
+                loss = lossFunc(output.view(vertices.shape[0],61,int(args.vertices_dim),3), vertices.view(vertices.shape[0],61,int(args.vertices_dim),3))
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
@@ -175,17 +177,21 @@ if __name__== '__main__':
             
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:
-                    for vertices, emotion in vepoch:
+                    for vertices, emotion, name, obj in vepoch:
                         #TODO:fare evaluation in maniera autoregressiva
+
                         vepoch.set_description(f"Epoch{epoch}")
                         vertices = vertices.to(device)
                         emotion = emotion.to(device)
 
                         output = model.predict(emotion,vertices[:,0,:],61).to(device)
-                        
+                        output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
+                        vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
                         loss = lossFunc(output, vertices)
                         
                         val_loss += loss.item()
+
+                        
 
                 print('Validation Loss: ' + str(val_loss/len(val_loader)))
                 experiment.log_metric('VAL_LOSS: ', val_loss/len(val_loader), step = epoch + 1)
