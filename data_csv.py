@@ -18,7 +18,7 @@ path = '/mnt/diskone-first/lcaselli/dataset'
                 writer.writerow([filename,filerar])
  """
 
-csv_file = pd.read_csv('validation.csv')
+csv_file = pd.read_csv('training.csv')
 for i in range(len(csv_file)):
     folder = os.path.join(path,csv_file.iloc[i, 0])
     print(folder)

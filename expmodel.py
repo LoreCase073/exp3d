@@ -82,10 +82,10 @@ class ExpModel(nn.Module):
         #layernorm for the transformer decoder
         layer_norm = nn.LayerNorm(int(args.feat_dim))
         #transformer decoder
-        dec_layer = nn.TransformerDecoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_dec), dim_feedforward = 2*int(args.feat_dim), batch_first = True)
+        dec_layer = nn.TransformerDecoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_dec), dim_feedforward = 2048, batch_first = True)
         self.decoder = nn.TransformerDecoder(dec_layer, num_layers = int(args.nlayer_dec), norm = layer_norm)
         #define encoder for the emotions
-        enc_layer = nn.TransformerEncoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_enc), dim_feedforward = 2*int(args.feat_dim), batch_first = True)
+        enc_layer = nn.TransformerEncoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_enc), dim_feedforward = 2048, batch_first = True)
         self.encoder= nn.TransformerEncoder(encoder_layer = enc_layer, num_layers = int(args.nlayer_enc), norm = layer_norm)
 
         #last linear layer to go back to vertices coordinates

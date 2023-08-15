@@ -36,6 +36,8 @@ if __name__== '__main__':
                         help="Experiment name")
     parser.add_argument("--weights_path", dest="weights_path",
                         help="Weights path")
+    parser.add_argument("--obj_path", dest="obj_path",
+                        help="Vertices save path")
     
     #model parameters
     parser.add_argument("--vertices_dim", dest="vertices_dim", default=5023,
@@ -95,31 +97,35 @@ if __name__== '__main__':
     
     print(f"Save weights in: {save_path}.")
 
+    #Commented to not save the tensors
+    """ obj_save = os.path.join(args.obj_path, args.name_experiment)
+
+    if not os.path.exists(obj_save):
+        os.makedirs(obj_save) """
+
     # save hyperparams dictionary in save_weights_path
     with open(save_path + '/hyperparams.json', "w") as outfile:
         json.dump(hyper_parameters, outfile, indent=4)
     
     #Dataset loading
     training_set = Exp3dDataset(filepath=args.filepath,
-    csv_file=args.training_csv,
-    length=int(args.seq_dim)
+    csv_file=args.training_csv
     )
 
 
     valid_set = Exp3dDataset(filepath=args.filepath,
-    csv_file=args.validation_csv,
-    length=int(args.seq_dim)
+    csv_file=args.validation_csv
     )
 
     training_loader = DataLoader(dataset=training_set, 
     batch_size=batch_size, 
     shuffle=True, 
-    num_workers=2)
+    num_workers=8)
 
     val_loader = DataLoader(dataset=valid_set, 
     batch_size=1, 
     shuffle=True, 
-    num_workers=1)
+    num_workers=4)
 
     #TODO: define the optimizer
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
@@ -156,7 +162,7 @@ if __name__== '__main__':
                 
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della retecon i vertici stessi
-                loss = lossFunc(output.view(vertices.shape[0],61,int(args.vertices_dim),3), vertices.view(vertices.shape[0],61,int(args.vertices_dim),3))
+                loss = lossFunc(output, vertices)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
@@ -170,7 +176,7 @@ if __name__== '__main__':
             torch.save(model.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
 
         #START of the validation!
-        if epoch % 5 == 0:
+        if epoch % 2 == 0:
             print(f'Start Validation:')
             model.eval() 
             val_loss = 0.0
@@ -185,11 +191,12 @@ if __name__== '__main__':
                         emotion = emotion.to(device)
 
                         output = model.predict(emotion,vertices[:,0,:],61).to(device)
-                        output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
-                        vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
                         loss = lossFunc(output, vertices)
                         
                         val_loss += loss.item()
+                        #save the tensors, commented to not save them
+                        #can retrieve them later on testing
+                        #torch.save(output.cpu(), obj_save + '/' + (str(epoch+1)) + '_' + str(name[0]) + '.pt')
 
                         
 

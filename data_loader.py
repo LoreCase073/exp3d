@@ -62,10 +62,9 @@ path = '/mnt/diskone-first/lcaselli/dataset'
 
 class Exp3dDataset(Dataset):
 
-    def __init__(self, filepath, csv_file, length):
+    def __init__(self, filepath, csv_file):
         self.filepath = filepath
         #TODO: magari aggiungere che si può modificare lunghezza delle sequenze
-        self.length = length
         self.csv_file = pd.read_csv(csv_file)
         self.extract_vertices = Extract_Vertices()
         self.emotion_encoding = Emotion_Encoding()
@@ -102,7 +101,7 @@ class Exp3dDataset(Dataset):
         return vertices, emotion, name, em
 
     def __len__(self):
-        return self.length
+        return self.csv_file.shape[0]
 
 
 class Extract_Vertices(object):
