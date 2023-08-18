@@ -64,7 +64,7 @@ def init_mem_mask(t,s):
     mask = torch.ones(t,s)
     for i in range(t):
         mask[i, i+1:] *= float('-inf')
-    return mask
+    return (mask==1)
     
 
 class ExpModel(nn.Module):
@@ -137,12 +137,17 @@ class ExpModel(nn.Module):
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
             '''
         #TODO: consider this alternative as training cycle
-        emb_vertices = self.embed_vertices(vertices)
+        in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
+        emb_vertices = self.embed_vertices(in_vert)
+        
         input_vertices = self.pos_enc(emb_vertices)
         tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
+
+        out = torch.cat((in_vert[:,0,:].unsqueeze(1),out),1)
+        out = out + vertices[:,0,:].unsqueeze(1)
 
         return out 
 
@@ -159,7 +164,8 @@ class ExpModel(nn.Module):
         emotion_features = self.encoder(embedded_emotion)
         for i in range(frames):
             if i == 0:
-                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
+                in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
+                emb_vertices = self.embed_vertices(in_vert) #(batch, 1, emb_size)
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
@@ -173,5 +179,7 @@ class ExpModel(nn.Module):
             last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
             #concat embeddings with last embeddings
             emb_vertices = torch.cat((emb_vertices,last_vertices),1)
+        
+        out_vertices = out_vertices + vertices.unsqueeze(1)
 
         return out_vertices 

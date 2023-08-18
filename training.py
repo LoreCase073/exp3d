@@ -172,7 +172,7 @@ if __name__== '__main__':
         
         print(f"Training loss: {running_loss/len(training_loader)} Epoch: {epoch}")
         experiment.log_metric('train_loss', running_loss/len(training_loader), step=epoch+1)
-        if epoch % 1 ==0:
+        if epoch % 2 ==0:
             torch.save(model.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
 
         #START of the validation!
