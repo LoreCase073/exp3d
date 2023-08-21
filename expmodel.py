@@ -106,35 +106,36 @@ class ExpModel(nn.Module):
 
         #TODO: this is done simulating the Faceformer autoregressive training, maybe 
         #it is not required to do so
-        '''
-        for i in range(length):
+        
+        for i in range(vertices.shape[1]-1):
             if i == 0:
                 #embed the starting vertices
-                emb_vertices = self.embed_vertices(vertices)
-                out_vertices = vertices
+                emb_vertices = self.embed_vertices(vertices[:,0,:].unsqueeze(1))
+                input_vertices = self.pos_enc(emb_vertices)
 
-                #add positional encoding to the vertices embedding
+                
+            else:
+                
+                input_vertices = self.pos_enc(emb_vertices)
+                
             
-            input_vertices = self.pos_enc(emb_vertices)
-
-            #TODO: check if the masks are done correctly
-
-            tgt_mask = init_tgt_mask(input_vertices.shape[1])
-
-            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1])
-
-            #decoder
+            tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
+            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
+            #out features
             feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
+            #vertices in vertices dimensions
+            out_vertices = self.lin_vertices(feature_out)
+            #take last vertices and embed them to feature dimensions
+            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
+            #concat embeddings with last embeddings
+            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
+
+
+        out = torch.cat((vertices[:,0,:].unsqueeze(1),out),1)
             
-            out = self.lin_vertices(feature_out)
-
-            out_vertices = torch.cat((out_vertices, out), 1)
-
-            emb_vertices = torch.cat((emb_vertices, feature_out), 1)
-            
-
-            #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
-            '''
+        #Commented to try the regressive training
+        """ #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
+        
         #TODO: consider this alternative as training cycle
         #in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
         emb_vertices = self.embed_vertices(vertices[:,:-1,:])
@@ -146,7 +147,7 @@ class ExpModel(nn.Module):
         out = self.lin_vertices(feature_out)
 
         out = torch.cat((vertices[:,0,:].unsqueeze(1),out),1)
-        #out = out + vertices[:,0,:].unsqueeze(1)
+        #out = out + vertices[:,0,:].unsqueeze(1) """
 
         return out 
 
