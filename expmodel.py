@@ -3,8 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-#TODO: modify the biased mask to work
-
+@torch.no_grad()
 class BiasedMask(nn.Module):
     def __init__(self, n_head, max_len: int = 61):
         super().__init__()
@@ -137,8 +136,8 @@ class ExpModel(nn.Module):
             #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
             '''
         #TODO: consider this alternative as training cycle
-        in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
-        emb_vertices = self.embed_vertices(in_vert)
+        #in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
+        emb_vertices = self.embed_vertices(vertices[:,:-1,:])
         
         input_vertices = self.pos_enc(emb_vertices)
         tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
@@ -146,8 +145,8 @@ class ExpModel(nn.Module):
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
 
-        out = torch.cat((in_vert[:,0,:].unsqueeze(1),out),1)
-        out = out + vertices[:,0,:].unsqueeze(1)
+        out = torch.cat((vertices[:,0,:].unsqueeze(1),out),1)
+        #out = out + vertices[:,0,:].unsqueeze(1)
 
         return out 
 
@@ -164,8 +163,8 @@ class ExpModel(nn.Module):
         emotion_features = self.encoder(embedded_emotion)
         for i in range(frames):
             if i == 0:
-                in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
-                emb_vertices = self.embed_vertices(in_vert) #(batch, 1, emb_size)
+                #in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
+                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
@@ -180,6 +179,7 @@ class ExpModel(nn.Module):
             #concat embeddings with last embeddings
             emb_vertices = torch.cat((emb_vertices,last_vertices),1)
         
-        out_vertices = out_vertices + vertices.unsqueeze(1)
+        #out_vertices = out_vertices + vertices.unsqueeze(1)
+        out_vertices = torch.cat((vertices.unsqueeze(1),out_vertices),1)
 
         return out_vertices 

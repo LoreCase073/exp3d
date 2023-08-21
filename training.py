@@ -161,7 +161,7 @@ if __name__== '__main__':
                 output = model(emotion, vertices).to(device)
                 
                 #TODO: complete the training loop
-                #TODO: qui deve confrontare gli output della retecon i vertici stessi
+                #TODO: qui deve confrontare gli output della rete con i vertici stessi
                 loss = lossFunc(output, vertices)
                 loss.backward()
                 optimizer.step()
@@ -190,7 +190,7 @@ if __name__== '__main__':
                         vertices = vertices.to(device)
                         emotion = emotion.to(device)
 
-                        output = model.predict(emotion,vertices[:,0,:],61).to(device)
+                        output = model.predict(emotion,vertices[:,0,:],60).to(device)
                         loss = lossFunc(output, vertices)
                         
                         val_loss += loss.item()
