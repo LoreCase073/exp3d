@@ -11,7 +11,7 @@ import json
 import numpy as np
 import torch.nn as nn
 from data_loader import Exp3dDataset
-from expmodel import ExpModel
+from expmodel import ExpModel, ExpModelAutoregressive
 import matplotlib.pyplot as plt
 import trimesh
 
@@ -71,7 +71,8 @@ if __name__== '__main__':
     experiment = Experiment(project_name=args.project_name, disabled=False)
     experiment.set_name(args.name_experiment)
 
-    model = ExpModel(args=args, device=device)
+    #model = ExpModel(args=args, device=device)
+    model = ExpModelAutoregressive(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
@@ -128,7 +129,7 @@ if __name__== '__main__':
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
 
-                output = model.predict(emotion,vertices[:,0,:],61).to(device)
+                output = model.predict(emotion,vertices[:,0,:],60).to(device)
                 output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 loss = lossFunc(output, vertices)
