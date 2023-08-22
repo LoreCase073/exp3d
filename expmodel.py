@@ -53,6 +53,24 @@ class PositionalEncoding(nn.Module):
         """
         x = x + self.pe[:,:x.size(1),:]
         return self.dropout(x)
+    
+
+class PeriodicPositionalEncoding(nn.Module):
+    def __init__(self, d_model, dropout=0.1, period=10, max_len=61):
+        super(PeriodicPositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+        pe = torch.zeros(period, d_model)
+        position = torch.arange(0, period, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0) # (1, period, d_model)
+        repeat_num = (max_len//period) + 1
+        pe = pe.repeat(1, repeat_num, 1)
+        self.register_buffer('pe', pe)
+    def forward(self, x):
+        x = x + self.pe[:, :x.size(1), :]
+        return self.dropout(x)
 
 
 def init_tgt_mask(t):
@@ -76,7 +94,8 @@ class ExpModel(nn.Module):
         #emotion embedding
         self.embed_emotion = nn.Embedding(int(args.emotion_dim), int(args.feat_dim))
         #positional encoding
-        self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
+        #self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
+        self.pos_enc = PeriodicPositionalEncoding(int(args.feat_dim), float(args.dropout), period=10, max_len=61)
         #layernorm for the transformer decoder
         layer_norm = nn.LayerNorm(int(args.feat_dim))
         #transformer decoder
@@ -140,7 +159,7 @@ class ExpModel(nn.Module):
         in_vert[:,0,:] = in_vert[:,0,:] + vertices[:,0,:]
         input_vertices = self.embed_vertices(in_vert)
         
-        #input_vertices = self.pos_enc(emb_vertices)
+        input_vertices = self.pos_enc(input_vertices)
         tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
         mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
@@ -167,8 +186,8 @@ class ExpModel(nn.Module):
         for i in range(frames):
             if i == 0:
                 #in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
-                input_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
-                #input_vertices = self.pos_enc(emb_vertices)
+                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
+                input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
             tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
