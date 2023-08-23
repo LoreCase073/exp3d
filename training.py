@@ -11,7 +11,7 @@ import json
 import numpy as np
 import torch.nn as nn
 from data_loader import Exp3dDataset
-from expmodel import ExpModel, ExpModelAutoregressive
+from expmodel import ExpModel
 import matplotlib.pyplot as plt
 import trimesh
 
@@ -81,7 +81,7 @@ if __name__== '__main__':
         "scheduling": scheduling,
     }
 
-    experiment = Experiment(project_name=args.project_name, disabled=True)
+    experiment = Experiment(project_name=args.project_name, disabled=False)
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args, device=device)
@@ -95,6 +95,10 @@ if __name__== '__main__':
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
+
+    obj_save = os.path.join(args.obj_path, args.name_experiment)
+    if not os.path.exists(obj_save):
+        os.makedirs(obj_save)
     
     print(f"Save weights in: {save_path}.")
 
@@ -149,7 +153,7 @@ if __name__== '__main__':
         model.train()
 
         running_loss = 0.0
-        train_precision = 0.0
+        
         with tqdm(training_loader, unit="batch") as tepoch:
 
             for vertices, emotion, _, _ in tepoch:
@@ -193,11 +197,14 @@ if __name__== '__main__':
 
                         output = model.predict(emotion,vertices[:,0,:],60).to(device)
                         loss = lossFunc(output, vertices)
+
+                        
                         
                         val_loss += loss.item()
                         #save the tensors, commented to not save them
                         #can retrieve them later on testing
                         #torch.save(output.cpu(), obj_save + '/' + (str(epoch+1)) + '_' + str(name[0]) + '.pt')
+                        #torch.save(vertices.cpu(), obj_save + '/'  + str(name[0]) + '.pt')
 
                         
 

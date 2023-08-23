@@ -23,9 +23,12 @@ class BiasedMask(nn.Module):
                 closest_power_of_2 = 2**math.floor(math.log2(n)) 
                 return get_slopes_power_of_2(closest_power_of_2) + get_slopes(2*closest_power_of_2)[0::2][:n-closest_power_of_2]
         slopes = torch.Tensor(get_slopes(self.n_head))
-        alibi = slopes.unsqueeze(1).unsqueeze(1) * torch.arange(self.max_len).unsqueeze(0).unsqueeze(0).expand(self.n_head, -1, -1)
-        alibi = alibi.view(self.n_head, 1, self.max_len)
-        alibi = alibi.repeat(x.shape[0], 1, 1)
+        bias = torch.arange(start=0, end=self.max_len, step=1).unsqueeze(1).view(-1)
+        a = - torch.flip(bias,dims=[0])
+        alibi = torch.zeros(self.max_len, self.max_len)
+        for i in range(self.max_len):
+            alibi[i, :i+1] = a[-(i+1):]
+        alibi = slopes.unsqueeze(1).unsqueeze(1) * alibi.unsqueeze(0)
         mask = (torch.triu(torch.ones(self.max_len, self.max_len)) == 1).transpose(0,1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         mask = mask.unsqueeze(0) + alibi
@@ -88,7 +91,7 @@ class ExpModel(nn.Module):
         super().__init__()
 
         self.device = device
-
+        
         #vertices embedding
         self.embed_vertices = nn.Linear(int(args.vertices_dim)*3, int(args.feat_dim))
         #emotion embedding
@@ -197,9 +200,9 @@ class ExpModel(nn.Module):
             #vertices in vertices dimensions
             out_vertices = self.lin_vertices(feature_out)
             #take last vertices and embed them to feature dimensions
-            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
+            new_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
             #concat embeddings with last embeddings
-            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
+            emb_vertices = torch.cat((emb_vertices,new_vertices),1)
         
         out_vertices = out_vertices + vertices.unsqueeze(1)
         out_vertices = torch.cat((vertices.unsqueeze(1),out_vertices),1)

@@ -11,7 +11,7 @@ import json
 import numpy as np
 import torch.nn as nn
 from data_loader import Exp3dDataset
-from expmodel import ExpModel, ExpModelAutoregressive
+from expmodel import ExpModel
 import matplotlib.pyplot as plt
 import trimesh
 
@@ -71,8 +71,8 @@ if __name__== '__main__':
     experiment = Experiment(project_name=args.project_name, disabled=False)
     experiment.set_name(args.name_experiment)
 
-    #model = ExpModel(args=args, device=device)
-    model = ExpModelAutoregressive(args=args, device=device)
+    model = ExpModel(args=args, device=device)
+    #model = ExpModelAutoregressive(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
