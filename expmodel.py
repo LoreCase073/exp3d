@@ -97,8 +97,8 @@ class ExpModel(nn.Module):
         #emotion embedding
         self.embed_emotion = nn.Embedding(int(args.emotion_dim), int(args.feat_dim))
         #positional encoding
-        #self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
-        self.pos_enc = PeriodicPositionalEncoding(int(args.feat_dim), float(args.dropout), period=10, max_len=61)
+        self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
+        #self.pos_enc = PeriodicPositionalEncoding(int(args.feat_dim), float(args.dropout), period=10, max_len=61)
         #layernorm for the transformer decoder
         layer_norm = nn.LayerNorm(int(args.feat_dim))
         #transformer decoder
@@ -193,8 +193,10 @@ class ExpModel(nn.Module):
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
+                
             tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
             mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
+            
             #out features
             feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
             #vertices in vertices dimensions

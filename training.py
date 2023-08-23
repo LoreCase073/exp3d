@@ -81,7 +81,7 @@ if __name__== '__main__':
         "scheduling": scheduling,
     }
 
-    experiment = Experiment(project_name=args.project_name, disabled=False)
+    experiment = Experiment(project_name=args.project_name, disabled=True)
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args, device=device)
@@ -159,15 +159,14 @@ if __name__== '__main__':
             for vertices, emotion, _, _ in tepoch:
                 tepoch.set_description(f"Epoch{epoch}")
                 vertices = vertices.to(device)
-                emotion = emotion.to(device)
+                emotion = emotion[:,:-1].to(device)
 
                 optimizer.zero_grad()
 
                 output = model(emotion, vertices).to(device)
-                
                 #TODO: complete the training loop
                 #TODO: qui deve confrontare gli output della rete con i vertici stessi
-                loss = lossFunc(output, vertices)
+                loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
@@ -193,10 +192,10 @@ if __name__== '__main__':
 
                         vepoch.set_description(f"Epoch{epoch}")
                         vertices = vertices.to(device)
-                        emotion = emotion.to(device)
+                        emotion = emotion[:,:-1].to(device)
 
                         output = model.predict(emotion,vertices[:,0,:],60).to(device)
-                        loss = lossFunc(output, vertices)
+                        loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
 
                         
                         
