@@ -132,7 +132,7 @@ if __name__== '__main__':
                 output = model.predict(emotion,vertices[:,0,:],60).to(device)
                 output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
-                loss = lossFunc(output, vertices)
+                loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
                 val_loss += loss.item()
 
                 torch.save(output.cpu(), obj_save + '/'  + str(name[0]) + '.pt')

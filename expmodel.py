@@ -83,7 +83,7 @@ def init_mem_mask(t,s):
     mask = torch.ones(t,s)
     for i in range(t):
         mask[i, i+1:] *= float('-inf')
-    return (mask==1)
+    return mask
     
 
 class ExpModel(nn.Module):
@@ -120,47 +120,18 @@ class ExpModel(nn.Module):
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
 
+
         #add positional encoding to the emotion embedding
         embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
 
         emotion_features = self.encoder(embedded_emotion)
 
-        #TODO: this is done simulating the Faceformer autoregressive training, maybe 
-        #it is not required to do so
-        '''
-        for i in range(vertices.shape[1]-1):
-            if i == 0:
-                #embed the starting vertices
-                emb_vertices = self.embed_vertices(vertices[:,0,:].unsqueeze(1))
-                input_vertices = self.pos_enc(emb_vertices)
-
-                
-            else:
-                else:
-                input_vertices = self.pos_enc(emb_vertices)
-                
-            
-            tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
-            #out features
-            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
-            #vertices in vertices dimensions
-            out_vertices = self.lin_vertices(feature_out)
-            #take last vertices and embed them to feature dimensions
-            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
-            #concat embeddings with last embeddings
-            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
-
-
-        out = torch.cat((vertices[:,0,:].unsqueeze(1),out),1)
-            
-
-            #TODO: maybe it is wise to do the loss computation inside, to reduce the length of out_vertices?
-        '''
-        #TODO: consider this alternative as training cycle
+        
         in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
         in_vert[:,0,:] = in_vert[:,0,:] + vertices[:,0,:]
+     
         input_vertices = self.embed_vertices(in_vert)
+
         
         input_vertices = self.pos_enc(input_vertices)
         tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
@@ -193,7 +164,7 @@ class ExpModel(nn.Module):
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
-                
+
             tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
             mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
             
