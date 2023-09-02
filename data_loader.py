@@ -73,17 +73,34 @@ class Exp3dDataset(Dataset):
     #TODO: raffinare per prendere non solo lunghezza 61 stabilita
     def __getitem__(self, index):
 
+        template = os.path.join(self.filepath, 'COMA_Florence_Actors_Aligned')
+
+        path = os.path.join(self.filepath, 'COMA_FLAME_Aligned')
+
+        
+
         #folder to the file
-        folder = os.path.join(self.filepath, self.csv_file.iloc[index, 0])
+        folder = os.path.join(path, self.csv_file.iloc[index, 0])
+
+        template = template + '/' + self.csv_file.iloc[index,0] + '.ply'
+        myobj = trimesh.load_mesh(template, process=False)
+        vert = []
+        v = myobj.vertices
+        vert.append([v])
+        
+        vert = torch.FloatTensor(np.array(vert))
+        vert = vert.squeeze()
+        
+        template = vert.view(vert.shape[0]*vert.shape[1])
+
+
         
 
         #emotion to be extracted from the folder
         em = os.path.join(folder, self.csv_file.iloc[index, 1])
 
-        em = em.replace('.rar','')
-
         #emotion name, removed the .rar
-        emotion_name = self.csv_file.iloc[index,1].replace('.rar','')
+        emotion_name = self.csv_file.iloc[index,1]
 
         name = self.csv_file.iloc[index,0]+ '_' + emotion_name
 
@@ -95,10 +112,10 @@ class Exp3dDataset(Dataset):
         #for single expression, OHE of emotion
         emotion = self.emotion_encoding(emotion_name)
 
-        em = em + '/' + emotion_name + '/' + emotion_name + '_' 
+        em = em + '/' + emotion_name  + '_' 
 
 
-        return vertices, emotion, name, em
+        return vertices, emotion, name, em, template
 
     def __len__(self):
         return self.csv_file.shape[0]
@@ -114,7 +131,7 @@ class Extract_Vertices(object):
         vertices = []
         for i in range(61):
             num = str(str(0) + str(i)) if i < 10 else str(i)
-            myobj = trimesh.load_mesh(folder + '/' + emotion_name + '/' + emotion_name + '_' + num +'.obj', file_type='obj')
+            myobj = trimesh.load_mesh(folder + '/' + emotion_name + '_' + num +'.ply', process=False)
             v = myobj.vertices
             vertices.append([v])
         

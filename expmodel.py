@@ -116,7 +116,7 @@ class ExpModel(nn.Module):
 
 
 
-    def forward(self, emotion, vertices):
+    def forward(self, emotion, vertices,template):
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
 
@@ -126,9 +126,7 @@ class ExpModel(nn.Module):
 
         emotion_features = self.encoder(embedded_emotion)
 
-        
-        in_vert = vertices[:,:-1,:] - vertices[:,0,:].unsqueeze(1)
-        in_vert[:,0,:] = in_vert[:,0,:] + vertices[:,0,:]
+        in_vert = vertices[:,:-1,:] - template.unsqueeze(1)
      
         input_vertices = self.embed_vertices(in_vert)
 
@@ -139,7 +137,7 @@ class ExpModel(nn.Module):
         feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
         out = self.lin_vertices(feature_out)
 
-        out = out + vertices[:,0,:].unsqueeze(1)
+        out = out + template.unsqueeze(1)
 
         out = torch.cat((vertices[:,0,:].unsqueeze(1),out),1)
         
@@ -148,7 +146,7 @@ class ExpModel(nn.Module):
 
 
     #TODO: implement the predict method
-    def predict(self, emotion, vertices, frames):
+    def predict(self, emotion, vertices, template, frames):
 
         #embed emotion
         embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
@@ -160,7 +158,7 @@ class ExpModel(nn.Module):
         for i in range(frames):
             if i == 0:
                 #in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
-                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
+                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)-template.unsqueeze(1)) #(batch, 1, emb_size)
                 input_vertices = self.pos_enc(emb_vertices)
             else:
                 input_vertices = self.pos_enc(emb_vertices)
@@ -177,7 +175,7 @@ class ExpModel(nn.Module):
             #concat embeddings with last embeddings
             emb_vertices = torch.cat((emb_vertices,new_vertices),1)
         
-        out_vertices = out_vertices + vertices.unsqueeze(1)
+        out_vertices = out_vertices + template.unsqueeze(1)
         out_vertices = torch.cat((vertices.unsqueeze(1),out_vertices),1)
 
         return out_vertices 

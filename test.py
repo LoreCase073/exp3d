@@ -123,19 +123,29 @@ if __name__== '__main__':
     
     with torch.no_grad():
         with tqdm(val_loader, unit='batch') as vepoch:
-            for vertices, emotion, name, obj in vepoch:
+            for vertices, emotion, name, mesh, template in vepoch:
                 #TODO:fare evaluation in maniera autoregressiva
 
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
+                template = template.to(device)
 
-                output = model.predict(emotion,vertices[:,0,:],60).to(device)
+                output = model.predict(emotion,vertices[:,0,:],template,60).to(device)
                 output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
                 val_loss += loss.item()
 
-                torch.save(output.cpu(), obj_save + '/'  + str(name[0]) + '.pt')
+                output = output.squeeze().cpu()
+                for i in range(0,61):
+                    num = str(str(0) + str(i)) if i < 10 else str(i)
+
+                    tmp = trimesh.load_mesh(mesh[0]+num+'.ply',process=False)
+                    new = trimesh.Trimesh(vertices=output[i,:,:],faces=tmp.faces,process=False)
+                    tmp_path = obj_save+'/'+name[0]+'/'
+                    if not os.path.exists(tmp_path):
+                        os.makedirs(tmp_path)
+                    new.export(tmp_path+name[0]+'_'+num+'.ply')
 
                 
 

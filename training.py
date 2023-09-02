@@ -156,19 +156,17 @@ if __name__== '__main__':
         
         with tqdm(training_loader, unit="batch") as tepoch:
 
-            for vertices, emotion, _, _ in tepoch:
+            for vertices, emotion, _, _, template in tepoch:
                 tepoch.set_description(f"Epoch{epoch}")
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
+                template = template.to(device)
 
                 optimizer.zero_grad()
 
-                output = model(emotion, vertices).to(device)
-                #TODO: complete the training loop
-                #TODO: qui deve confrontare gli output della rete con i vertici stessi
-                output[:,1:,:] = output[:,1:,:] - output[:,0,:]
-                output[:,1:,:] = vertices[:,1:,:] - vertices[:,0,:]
-                loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
+                output = model(emotion, vertices, template).to(device)
+
+                loss = lossFunc(output, vertices)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
@@ -178,7 +176,7 @@ if __name__== '__main__':
         
         print(f"Training loss: {running_loss/len(training_loader)} Epoch: {epoch}")
         experiment.log_metric('train_loss', running_loss/len(training_loader), step=epoch+1)
-        if epoch % 2 ==0:
+        if epoch % 10 ==0:
             torch.save(model.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
 
         #START of the validation!
@@ -189,14 +187,15 @@ if __name__== '__main__':
             
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:
-                    for vertices, emotion, name, obj in vepoch:
+                    for vertices, emotion, name, obj, template in vepoch:
                         #TODO:fare evaluation in maniera autoregressiva
 
                         vepoch.set_description(f"Epoch{epoch}")
                         vertices = vertices.to(device)
                         emotion = emotion.to(device)
+                        template = template.to(device)
 
-                        output = model.predict(emotion,vertices[:,0,:],60).to(device)
+                        output = model.predict(emotion,vertices[:,0,:],template,60).to(device)
                         loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
 
                         
