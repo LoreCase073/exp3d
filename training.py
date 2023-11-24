@@ -14,6 +14,7 @@ from data_loader import Exp3dDataset
 from expmodel import ExpModel
 import matplotlib.pyplot as plt
 import trimesh
+from utils import compute_distance, composite_loss
 
 
 if __name__== '__main__':
@@ -58,6 +59,11 @@ if __name__== '__main__':
                         help="Number of layers in the transformer encoder")
     parser.add_argument("--seq_dim", dest="seq_dim", default=61,
                         help="Dimension of sequences in the dataset")
+    parser.add_argument("--c1", dest="c1", default=1,
+                        help="Coefficient for loss")
+    parser.add_argument("--c2", dest="c2", default=0.5,
+                        help="Coefficient for loss")
+    
     
     
 
@@ -96,9 +102,9 @@ if __name__== '__main__':
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    obj_save = os.path.join(args.obj_path, args.name_experiment)
+    """ obj_save = os.path.join(args.obj_path, args.name_experiment)
     if not os.path.exists(obj_save):
-        os.makedirs(obj_save)
+        os.makedirs(obj_save) """
     
     print(f"Save weights in: {save_path}.")
 
@@ -147,12 +153,14 @@ if __name__== '__main__':
     print("Starting the training")
     
     #TODO: define the loss
-    lossFunc = nn.MSELoss()
+    #lossFunc = nn.MSELoss()
 
     for epoch in range(epochs):
         model.train()
 
         running_loss = 0.0
+        train_distance = 0.0
+        
         
         with tqdm(training_loader, unit="batch") as tepoch:
 
@@ -165,17 +173,21 @@ if __name__== '__main__':
                 optimizer.zero_grad()
 
                 output = model(emotion, vertices, template).to(device)
+                output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
+                vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
 
-                loss = lossFunc(output, vertices)
+                loss = composite_loss(output[:,1:,:,:], vertices[:,1:,:,:], float(args.c1), float(args.c2))
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
+                train_distance += compute_distance(output,vertices)
 
 
         
         
         print(f"Training loss: {running_loss/len(training_loader)} Epoch: {epoch}")
         experiment.log_metric('train_loss', running_loss/len(training_loader), step=epoch+1)
+        experiment.log_metric('training_distance', train_distance/len(training_loader), step=epoch+1)
         if epoch % 10 ==0:
             torch.save(model.state_dict(), save_path + '/weights_' + (str(epoch+1)) + '.pth')
 
@@ -184,6 +196,7 @@ if __name__== '__main__':
             print(f'Start Validation:')
             model.eval() 
             val_loss = 0.0
+            distance = 0.0
             
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:
@@ -196,7 +209,11 @@ if __name__== '__main__':
                         template = template.to(device)
 
                         output = model.predict(emotion,vertices[:,0,:],template,60).to(device)
-                        loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
+                        output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
+                        vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
+                        loss = composite_loss(output[:,1:,:,:], vertices[:,1:,:,:], float(args.c1), float(args.c2))
+
+                        distance += compute_distance(output,vertices)
 
                         
                         
@@ -210,6 +227,7 @@ if __name__== '__main__':
 
                 print('Validation Loss: ' + str(val_loss/len(val_loader)))
                 experiment.log_metric('VAL_LOSS: ', val_loss/len(val_loader), step = epoch + 1)
+                experiment.log_metric('Distance: ', distance/len(val_loader), step = epoch + 1)
                 print(f'END EVALUATION {epoch}:')
         
     

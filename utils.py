@@ -14,8 +14,8 @@ def composite_loss(output, target, c1, c2):
     loss = c1 * loss1 + c2 * loss2
     return loss
 
-def distance(output, target):
-    d = ((output[:,:,0]-target[:,:,0])**(2))+((output[:,:,1]-target[:,:,1])**(2))+((output[:,:,2]-target[:,:,2])**(2))
+def compute_distance(output, target):
+    d = ((output[:,:,:,0]-target[:,:,:,0])**(2))+((output[:,:,:,1]-target[:,:,:,1])**(2))+((output[:,:,:,2]-target[:,:,:,2])**(2))
     d = torch.sqrt(d)
     d = torch.mean(d)
     return d

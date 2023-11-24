@@ -28,7 +28,9 @@ class BiasedMask(nn.Module):
         alibi = torch.zeros(self.max_len, self.max_len)
         for i in range(self.max_len):
             alibi[i, :i+1] = a[-(i+1):]
-        alibi = slopes.unsqueeze(1).unsqueeze(1) * alibi.unsqueeze(0)
+        alibi = slopes.unsqueeze(1).unsqueeze(1) * alibi.unsqueeze(0).expand(self.n_head, -1, -1)
+        alibi = alibi.view(self.n_head, self.max_len, self.max_len)
+        alibi = alibi.repeat(x.shape[0],1,1)
         mask = (torch.triu(torch.ones(self.max_len, self.max_len)) == 1).transpose(0,1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         mask = mask.unsqueeze(0) + alibi

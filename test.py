@@ -14,6 +14,7 @@ from data_loader import Exp3dDataset
 from expmodel import ExpModel
 import matplotlib.pyplot as plt
 import trimesh
+from utils import composite_loss, compute_distance
 
 
 if __name__== '__main__':
@@ -53,6 +54,10 @@ if __name__== '__main__':
                         help="Number of layers in the transformer encoder")
     parser.add_argument("--seq_dim", dest="seq_dim", default=61,
                         help="Dimension of sequences in the dataset")
+    parser.add_argument("--c1", dest="c1", default=1,
+                        help="Coefficient for loss")
+    parser.add_argument("--c2", dest="c2", default=0.5,
+                        help="Coefficient for loss")
     
     
 
@@ -120,6 +125,7 @@ if __name__== '__main__':
     print(f'Start Validation:')
     model.eval() 
     val_loss = 0.0
+    distance = 0.0
     
     with torch.no_grad():
         with tqdm(val_loader, unit='batch') as vepoch:
@@ -133,7 +139,8 @@ if __name__== '__main__':
                 output = model.predict(emotion,vertices[:,0,:],template,60).to(device)
                 output = output.view(vertices.shape[0],61,int(args.vertices_dim),3)
                 vertices = vertices.view(vertices.shape[0],61,int(args.vertices_dim),3)
-                loss = lossFunc(output[:,1:,:], vertices[:,1:,:])
+                loss = composite_loss(output[:,1:,:], vertices[:,1:,:], float(args.c1), float(args.c2))
+                distance += compute_distance(output[:,1:,:],vertices[:,1:,:])
                 val_loss += loss.item()
 
                 output = output.squeeze().cpu()
@@ -151,6 +158,7 @@ if __name__== '__main__':
 
         print('Validation Loss: ' + str(val_loss/len(val_loader)))
         experiment.log_metric('VAL_LOSS: ', val_loss/len(val_loader), step = 1)
+        experiment.log_metric('Distance: ', val_loss/len(val_loader), step = 1)
         print(f'END EVALUATION ')
     
     
