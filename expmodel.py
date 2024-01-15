@@ -5,7 +5,7 @@ import math
 
 @torch.no_grad()
 class BiasedMask(nn.Module):
-    def __init__(self, n_head, max_len: int = 61):
+    def __init__(self, n_head, max_len: int = 500):
         super().__init__()
         self.n_head = n_head
         self.max_len = max_len
@@ -40,7 +40,7 @@ class BiasedMask(nn.Module):
 #TODO: check if need to modify for the type of data we have
 class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 61):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 500):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -61,7 +61,7 @@ class PositionalEncoding(nn.Module):
     
 
 class PeriodicPositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, period=10, max_len=61):
+    def __init__(self, d_model, dropout=0.1, period=10, max_len=500):
         super(PeriodicPositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
         pe = torch.zeros(period, d_model)
@@ -114,7 +114,7 @@ class ExpModel(nn.Module):
         self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim)*3)
 
         #bias
-        self.bias_mask = BiasedMask(n_head = int(args.nhead_dec), max_len = 61)
+        self.bias_mask = BiasedMask(n_head = int(args.nhead_dec), max_len = 500)
 
 
 

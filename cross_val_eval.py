@@ -3,9 +3,9 @@ import os
 import trimesh
 import torch
 
-folder = ['test_crossval_1','test_crossval_2','test_crossval_3','test_crossval_4']
+folder = ['test_come_cross_1','test_come_cross_2','test_come_cross_3','test_come_cross_4']
 path = '/mnt/diskone-first/lcaselli/vertices/'
-path_gt = '/mnt/diskone-first/lcaselli/COMA_FLAME_Aligned/'
+path_gt = '/mnt/diskone-first/lcaselli/COMA_data/'
 
 predictions = []
 ground_truth = []
