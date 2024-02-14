@@ -9,7 +9,7 @@ The training is done on the Florence and COMA dataset.
 
 ## Dependencies
 
-- Check the required python packages in `requirements.yml`.
+- Check the required python packages in `requirements.txt`.
 
 ## Data splits
 
