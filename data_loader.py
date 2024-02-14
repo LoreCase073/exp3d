@@ -4,61 +4,8 @@ import torch
 from torch.utils.data import Dataset
 import os
 import trimesh
-import rarfile
 import pandas as pd
 
-'''
-class Exp3dDataset(Dataset):
-
-    def __init__(self, filepath, datatype, length):
-        self.filepath = filepath
-        self.length = length
-        #TODO: implement how to get the dataset
-
-    
-    def __getitem__(self, index):
-
-        file = ...
-        
-        #this is for 1 frame, i have to replicate for n = 60 frames
-        for i in range():
-            if i == 0:
-                vertices = []
-                with open(file) as f:
-                    lines = f.readlines()
-
-                    for l in lines:
-                        if l.startswith('v '):
-                            x = l.split(' ')
-                            v = [float(x[1]), float(x[2]), float(x[3].replace('\n', ''))]
-                            vertices.append(v)
-                vertices = torch.FloatTensor(vertices)
-            else:
-                tmp = []
-                with open(file) as f:
-                    lines = f.readlines()
-
-                    for l in lines:
-                        if l.startswith('v '):
-                            x = l.split(' ')
-                            v = [float(x[1]), float(x[2]), float(x[3].replace('\n', ''))]
-                            tmp.append(v)
-                vertices = torch.cat([vertices, torch.FloatTensor(tmp)])
-
-            #TODO: implement how to load the emotion vector
-            #for single expression, 0 neutral, from 1 to 9 morph, from 10 50 expression climax, 60 neutral again
-            emotion = ...
-
-
-        return vertices, emotion
-
-    
-    def __len__(self):
-        return self.len
-
-'''
-
-path = '/mnt/diskone-first/lcaselli/dataset'
 
 
 
@@ -124,13 +71,11 @@ class Exp3dDataset(Dataset):
 
     def __init__(self, filepath, csv_file):
         self.filepath = filepath
-        #TODO: magari aggiungere che si può modificare lunghezza delle sequenze
         self.csv_file = pd.read_csv(csv_file)
         self.extract_vertices = Extract_Vertices()
         self.emotion_encoding = Emotion_Encoding()
         
 
-    #TODO: raffinare per prendere non solo lunghezza 61 stabilita
     def __getitem__(self, index):
 
         template = os.path.join(self.filepath, 'COMA_Florence_Actors_Aligned')

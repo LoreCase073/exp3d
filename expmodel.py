@@ -37,7 +37,7 @@ class BiasedMask(nn.Module):
         return mask
 
 
-#TODO: check if need to modify for the type of data we have
+
 class PositionalEncoding(nn.Module):
 
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 500):
@@ -147,7 +147,7 @@ class ExpModel(nn.Module):
         return out 
 
 
-    #TODO: implement the predict method
+
     def predict(self, emotion, vertices, template, frames):
 
         #embed emotion
@@ -159,7 +159,7 @@ class ExpModel(nn.Module):
         emotion_features = self.encoder(embedded_emotion)
         for i in range(frames):
             if i == 0:
-                #in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
+
                 emb_vertices = self.embed_vertices(vertices.unsqueeze(1)-template.unsqueeze(1)) #(batch, 1, emb_size)
                 input_vertices = self.pos_enc(emb_vertices)
             else:
@@ -182,106 +182,3 @@ class ExpModel(nn.Module):
 
         return out_vertices 
     
-
-""" class ExpModelAutoregressive(nn.Module):
-    def __init__(self, args, device):
-        super().__init__()
-
-        self.device = device
-
-        #vertices embedding
-        self.embed_vertices = nn.Linear(int(args.vertices_dim)*3, int(args.feat_dim))
-        #emotion embedding
-        self.embed_emotion = nn.Embedding(int(args.emotion_dim), int(args.feat_dim))
-        #positional encoding
-        self.pos_enc = PositionalEncoding(int(args.feat_dim), float(args.dropout))
-        #layernorm for the transformer decoder
-        layer_norm = nn.LayerNorm(int(args.feat_dim))
-        #transformer decoder
-        dec_layer = nn.TransformerDecoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_dec), dim_feedforward = 2048, batch_first = True)
-        self.decoder = nn.TransformerDecoder(dec_layer, num_layers = int(args.nlayer_dec), norm = layer_norm)
-        #define encoder for the emotions
-        enc_layer = nn.TransformerEncoderLayer(d_model = int(args.feat_dim), nhead = int(args.nhead_enc), dim_feedforward = 2048, batch_first = True)
-        self.encoder= nn.TransformerEncoder(encoder_layer = enc_layer, num_layers = int(args.nlayer_enc), norm = layer_norm)
-
-        #last linear layer to go back to vertices coordinates
-        self.lin_vertices = nn.Linear(int(args.feat_dim), int(args.vertices_dim)*3)
-
-        #bias
-        self.bias_mask = BiasedMask(n_head = int(args.nhead_dec), max_len = 61)
-
-
-
-    def forward(self, emotion, vertices):
-        #embed emotion
-        embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
-
-        #add positional encoding to the emotion embedding
-        embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
-
-        emotion_features = self.encoder(embedded_emotion)
-
-        #TODO: this is done simulating the Faceformer autoregressive training, maybe 
-        #it is not required to do so
-        
-        for i in range(vertices.shape[1]-1):
-            if i == 0:
-                #embed the starting vertices
-                emb_vertices = self.embed_vertices(vertices[:,0,:].unsqueeze(1))
-                input_vertices = self.pos_enc(emb_vertices)
-
-                
-            else:
-                input_vertices = self.pos_enc(emb_vertices)
-                
-            
-            tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
-            #out features
-            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
-            #vertices in vertices dimensions
-            out_vertices = self.lin_vertices(feature_out)
-            #take last vertices and embed them to feature dimensions
-            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
-            #concat embeddings with last embeddings
-            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
-
-
-        out = torch.cat((vertices[:,0,:].unsqueeze(1),out_vertices),1)
-        
-
-        return out 
-
-
-    #TODO: implement the predict method
-    def predict(self, emotion, vertices, frames):
-
-        #embed emotion
-        embedded_emotion = self.embed_emotion(emotion) #(batch, length, emb_size)
-
-        #add positional encoding to the emotion embedding
-        embedded_emotion = self.pos_enc(embedded_emotion) #(batch, length, emb_size)
-
-        emotion_features = self.encoder(embedded_emotion)
-        for i in range(frames):
-            if i == 0:
-                #in_vert = vertices.unsqueeze(1) - vertices.unsqueeze(1)
-                emb_vertices = self.embed_vertices(vertices.unsqueeze(1)) #(batch, 1, emb_size)
-                input_vertices = self.pos_enc(emb_vertices)
-            else:
-                input_vertices = self.pos_enc(emb_vertices)
-            tgt_mask = self.bias_mask(input_vertices)[:, :input_vertices.shape[1], :input_vertices.shape[1]].clone().detach().to(device = self.device)
-            mem_mask = init_mem_mask(input_vertices.shape[1], emotion_features.shape[1]).clone().detach().to(device = self.device)
-            #out features
-            feature_out = self.decoder(input_vertices, emotion_features, tgt_mask = tgt_mask, memory_mask = mem_mask)
-            #vertices in vertices dimensions
-            out_vertices = self.lin_vertices(feature_out)
-            #take last vertices and embed them to feature dimensions
-            last_vertices = self.embed_vertices(out_vertices[:,-1,:]).unsqueeze(1)
-            #concat embeddings with last embeddings
-            emb_vertices = torch.cat((emb_vertices,last_vertices),1)
-        
-        #out_vertices = out_vertices + vertices.unsqueeze(1)
-        out_vertices = torch.cat((vertices.unsqueeze(1),out_vertices),1)
-
-        return out_vertices  """
