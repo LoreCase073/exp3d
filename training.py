@@ -23,8 +23,6 @@ if __name__== '__main__':
     parser.add_argument("--epochs", dest="epochs", default=5, help="number of epochs")
     parser.add_argument("--batch_size", dest="batch_size", default=64, help="Batch size")
     parser.add_argument("--lr", dest="lr", default=1e-4, help="learning rate train", type=float)
-    parser.add_argument("--scheduling", dest="scheduling", default=0,
-                        help="1 if scheduling lr policy applied, 0 otherwise")
     parser.add_argument("--filepath", dest="filepath", 
                         help="Path to the dataset")
     parser.add_argument("--training_csv", dest="training_csv", 
@@ -43,7 +41,7 @@ if __name__== '__main__':
     #model parameters
     parser.add_argument("--vertices_dim", dest="vertices_dim", default=5023,
                         help="Number of vertices")
-    parser.add_argument("--feat_dim", dest="feat_dim", default=1024,
+    parser.add_argument("--feat_dim", dest="feat_dim", default=768,
                         help="Dimension of features in the model")
     parser.add_argument("--emotion_dim", dest="emotion_dim", default=8,
                         help="Dimension of emotion vector")

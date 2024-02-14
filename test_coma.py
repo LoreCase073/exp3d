@@ -75,7 +75,6 @@ if __name__== '__main__':
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args, device=device)
-    #model = ExpModelAutoregressive(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
@@ -128,7 +127,6 @@ if __name__== '__main__':
     with torch.no_grad():
         with tqdm(val_loader, unit='batch') as vepoch:
             for vertices, expression, name, mesh, template, num_frames in vepoch:
-                #TODO:fare evaluation in maniera autoregressiva
 
                 vertices = vertices.to(device)
                 expression = expression.to(device)

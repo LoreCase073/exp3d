@@ -38,7 +38,7 @@ if __name__== '__main__':
     #model parameters
     parser.add_argument("--vertices_dim", dest="vertices_dim", default=5023,
                         help="Number of vertices")
-    parser.add_argument("--feat_dim", dest="feat_dim", default=1024,
+    parser.add_argument("--feat_dim", dest="feat_dim", default=768,
                         help="Dimension of features in the model")
     parser.add_argument("--emotion_dim", dest="emotion_dim", default=8,
                         help="Dimension of emotion vector")
@@ -77,7 +77,6 @@ if __name__== '__main__':
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args, device=device)
-    #model = ExpModelAutoregressive(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
@@ -130,7 +129,6 @@ if __name__== '__main__':
     with torch.no_grad():
         with tqdm(val_loader, unit='batch') as vepoch:
             for vertices, emotion, name, mesh, template in vepoch:
-                #TODO:fare evaluation in maniera autoregressiva
 
                 vertices = vertices.to(device)
                 emotion = emotion.to(device)
