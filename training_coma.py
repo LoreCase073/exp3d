@@ -89,7 +89,6 @@ if __name__== '__main__':
     experiment.set_name(args.name_experiment)
 
     model = ExpModel(args=args, device=device)
-    #model = ExpModelAutoregressive(args=args, device=device)
 
     
     experiment.log_parameters(hyper_parameters)
@@ -100,17 +99,11 @@ if __name__== '__main__':
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    """ obj_save = os.path.join(args.obj_path, args.name_experiment)
-    if not os.path.exists(obj_save):
-        os.makedirs(obj_save) """
+
     
     print(f"Save weights in: {save_path}.")
 
-    #Commented to not save the tensors
-    """ obj_save = os.path.join(args.obj_path, args.name_experiment)
 
-    if not os.path.exists(obj_save):
-        os.makedirs(obj_save) """
 
     # save hyperparams dictionary in save_weights_path
     with open(save_path + '/hyperparams.json', "w") as outfile:
@@ -136,10 +129,10 @@ if __name__== '__main__':
     shuffle=True, 
     num_workers=4)
 
-    #TODO: define the optimizer
+    # define the optimizer
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
 
-    #TODO: define the model
+    # define the model
     model = model.to(device)
 
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -150,8 +143,7 @@ if __name__== '__main__':
 
     print("Starting the training")
     
-    #TODO: define the loss
-    #lossFunc = nn.MSELoss()
+
 
     for epoch in range(epochs):
         model.train()
@@ -199,7 +191,6 @@ if __name__== '__main__':
             with torch.no_grad():
                 with tqdm(val_loader, unit='batch') as vepoch:
                     for vertices, emotion, name, obj, template, num_frames in vepoch:
-                        #TODO:fare evaluation in maniera autoregressiva
 
                         vepoch.set_description(f"Epoch{epoch}")
                         vertices = vertices.to(device)
@@ -216,10 +207,6 @@ if __name__== '__main__':
                         
                         
                         val_loss += loss.item()
-                        #save the tensors, commented to not save them
-                        #can retrieve them later on testing
-                        #torch.save(output.cpu(), obj_save + '/' + (str(epoch+1)) + '_' + str(name[0]) + '.pt')
-                        #torch.save(vertices.cpu(), obj_save + '/'  + str(name[0]) + '.pt')
 
                         
 
