@@ -15,6 +15,11 @@ The training is done on the Florence and COMA dataset.
 
 - The train, val splits are specified for the Florence dataset from `training.csv` and `validation.csv`. If required to work with a cross validation set, in the `dataset_cross_val` and `coma_cross_val` are specified the subsets for k = 4 subsets.
 
+- The data for the Florence dataset should be organized as follows.
+- `Florence_directory/subject_name/emotion/emotion_framenumber.ply` for the sequences of meshes;
+- `Florence_template_directory/subject_name.ply` for the templates to be subtracted in the model;
+- The data for the COMA dataset should be organized as described for the Florence dataset.
+
 ## Training and Testing
 
 To start the training it can be done as following:
