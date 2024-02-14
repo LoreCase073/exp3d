@@ -11,7 +11,7 @@ import pandas as pd
 
 class Coma3dDataset(Dataset):
 
-    def __init__(self, filepath, csv_file):
+    def __init__(self, filepath, template_path, csv_file):
         self.filepath = filepath
         self.csv_file = pd.read_csv(csv_file)
         self.extract_vertices = Extract_Vertices_Coma()
@@ -69,7 +69,7 @@ class Coma3dDataset(Dataset):
 
 class Exp3dDataset(Dataset):
 
-    def __init__(self, filepath, csv_file):
+    def __init__(self, filepath, template_path, csv_file):
         self.filepath = filepath
         self.csv_file = pd.read_csv(csv_file)
         self.extract_vertices = Extract_Vertices()

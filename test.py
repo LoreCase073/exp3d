@@ -22,6 +22,8 @@ if __name__== '__main__':
 
     parser.add_argument("--filepath", dest="filepath", 
                         help="Path to the dataset")
+    parser.add_argument("--template_path", dest="template_path", 
+                        help="Path to the dataset templates")
     parser.add_argument("--training_csv", dest="training_csv", 
                         help="Path to the csv training set")
     parser.add_argument("--validation_csv", dest="validation_csv", 
@@ -92,7 +94,8 @@ if __name__== '__main__':
     
 
 
-    valid_set = Exp3dDataset(filepath=args.filepath,
+    valid_set = Exp3dDataset(filepath=args.filepath, 
+                             template_path=args.template_path,
     csv_file=args.validation_csv
     )
 
